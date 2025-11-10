@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Selin Ryu L&D Specialist Portfolio</title>
+    <!-- Tailwind CSS CDN 로드 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Inter 폰트 설정 */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display:swap');
+        body { font-family: 'Inter', sans-serif; }
+        /* 커스텀 스크롤바 (선택 사항) */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 4px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'borg-blue': '#004d99',
+                        'borg-light': '#e0f7fa',
+                        'accent': '#10b981',
+                        'gemini-yellow': '#fbbd02', /* Gemini brand color for sparkle button */
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50">
+    <!-- Firebase/Auth Setup (Mandatory for this environment, though Firestore is not used) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        
+        // Global variables must be accessed safely
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // Sign in anonymously or with custom token
+        async function authenticate() {
+            try {
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Firebase authentication failed:", error);
+            }
+        }
+        authenticate();
+    </script>
+
+    <!-- Gemini API Utility Function -->
+    <script>
+        const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent";
+        const API_KEY = ""; // Placeholder, environment provides the key
+
+        async function fetchGeminiContent(userPrompt, systemPrompt, schema) {
+            const payload = {
+                contents: [{ parts: [{ text: userPrompt }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                config: {} // Configuration placeholder
+            };
+
+            if (schema) {
+                payload.config.responseMimeType = "application/json";
+                payload.config.responseSchema = schema;
+            }
+
+            for (let i = 0; i < 3; i++) { // Exponential backoff retry
+                try {
+                    const response = await fetch(`${API_URL}?key=${API_KEY}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        if (response.status === 429 && i < 2) { // Rate limit, retry
+                            await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
+                            continue;
+                        }
+                        throw new Error(`API call failed with status: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                    
+                    if (schema && text) {
+                        try {
+                            return JSON.parse(text);
+                        } catch (e) {
+                            console.error("Failed to parse JSON response:", text);
+                            throw new Error("Invalid JSON response from model.");
+                        }
+                    }
+                    return text;
+
+                } catch (error) {
+                    console.error("Gemini API request error:", error);
+                    if (i === 2) throw error;
+                    await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
+                }
+            }
+            return "Error generating content.";
+        }
+    </script>
+
+    <!-- Header & Navigation -->
+    <header class="bg-borg-blue text-white shadow-lg sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-4 md:flex justify-between items-center">
+            <h1 class="text-3xl font-extrabold tracking-tight">
+                Selin Ryu L&D Specialist Portfolio
+            </h1>
+            <nav class="mt-3 md:mt-0 space-x-4 flex justify-center flex-wrap">
+                <a href="#home" class="text-sm font-medium hover:text-accent transition duration-200">Home/Vision</a>
+                <a href="#digital-hr" class="text-sm font-medium hover:text-accent transition duration-200">Digital HR</a>
+                <a href="#lnd" class="text-sm font-medium hover:text-accent transition duration-200">L&D & Compliance</a>
+                <a href="#vision-map" class="text-sm font-medium hover:text-accent transition duration-200">Vision & Data</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4">
+
+        <!-- 1. 🏠 Hero Section (Home / Vision) -->
+        <section id="home" class="py-16 md:py-24">
+            <div class="max-w-4xl mx-auto text-center">
+                <p class="text-borg-blue font-bold text-lg mb-3 uppercase tracking-wider">
+                    Strategic L&D Architect for BorgWarner's Future
+                </p>
+                <h2 class="text-5xl md:text-6xl font-extrabold text-gray-900 leading-tight mb-6">
+                    Driving 'Think Differently' Culture through HR Innovation
+                </h2>
+                <!-- Refined L&D-Centric Summary (English) -->
+                <p class="text-lg text-gray-600 mb-8 max-w-3xl mx-auto">
+                    My foundation as an L&D specialist is built on systematic efficiency and data integrity. I leverage E2E HR process knowledge, gained from managing over 300 employee workflows at BorgWarner, to design and optimize robust L&D systems. My expertise in high-volume data accuracy and quality control (Coupang experience) ensures all Workday-based HR data is reliable for strategic, data-driven L&D investment decisions.
+                </p>
+
+                <!-- Placeholder Image for Context -->
+                <img src="https://placehold.co/800x200/004d99/ffffff?text=e-Mobility+L%26D+Innovation+Concept" alt="e-Mobility L&D Innovation Concept" class="mx-auto rounded-xl shadow-2xl mb-10" />
+
+                <a href="#digital-hr" class="inline-block px-8 py-3 text-lg font-bold text-white bg-accent rounded-full shadow-lg hover:bg-green-600 transition duration-300">
+                    My L&D Digital Transformation Projects →
+                </a>
+            </div>
+            
+            <!-- Key Tags -->
+            <div class="flex flex-wrap justify-center gap-4 mt-12 max-w-5xl mx-auto">
+                <span class="tag bg-indigo-100 text-indigo-700">🔑 AI Agent (Copilot)</span>
+                <span class="tag bg-indigo-100 text-indigo-700">💡 Workday E2E</span>
+                <span class="tag bg-indigo-100 text-indigo-700">⚙️ Power Automate</span>
+                <span class="tag bg-indigo-100 text-indigo-700">📊 Data-Driven L&D</span>
+            </div>
+            
+            <!-- Why Me? (Core Strengths Visualization) -->
+            <div class="mt-20 grid md:grid-cols-3 gap-8">
+                <div class="p-6 bg-white rounded-xl shadow-xl hover:shadow-2xl transition duration-300 transform hover:-translate-y-1 border-t-4 border-borg-blue">
+                    <div class="text-4xl text-borg-blue mb-3">🤖</div>
+                    <h4 class="text-xl font-bold mb-2">Digital L&D Architect</h4>
+                    <p class="text-gray-500">Expert in workflow automation and personalized learning design using SharePoint & Power Automate.</p>
+                </div>
+                <div class="p-6 bg-white rounded-xl shadow-xl hover:shadow-2xl transition duration-300 transform hover:-translate-y-1 border-t-4 border-borg-blue">
+                    <div class="text-4xl text-borg-blue mb-3">💻</div>
+                    <h4 class="text-xl font-bold mb-2">Global System Integrator</h4>
+                    <p class="text-gray-500">E2E Workday & local LMS management and maintaining data quality for L&D analytics.</p>
+                </div>
+                <div class="p-6 bg-white rounded-xl shadow-xl hover:shadow-2xl transition duration-300 transform hover:-translate-y-1 border-t-4 border-borg-blue">
+                    <div class="text-4xl text-borg-blue mb-3">🎓</div>
+                    <h4 class="text-xl font-bold mb-2">Tech-Savvy L&D Leader</h4>
+                    <p class="text-gray-500">Building adaptive L&D systems for e-propulsion technology and robust compliance training.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. 💡 HR Digital Transformation -->
+        <section id="digital-hr" class="py-16 bg-white rounded-xl shadow-2xl">
+            <h2 class="text-4xl font-extrabold text-center mb-12 text-gray-900">
+                💡 Digital L&D Transformation: Key Projects
+            </h2>
+            
+            <!-- Placeholder Image for Data/AI -->
+            <img src="https://placehold.co/1000x250/10b981/ffffff?text=AI+and+L%26D+Automation+Dashboard" alt="AI and L&D Automation Dashboard" class="mx-auto rounded-lg shadow-xl mb-10" />
+
+            <div class="grid md:grid-cols-2 gap-8 px-4">
+                <!-- Project 1: AI Agent -->
+                <div class="project-card p-8 border border-gray-200 rounded-lg shadow-md hover:shadow-xl transition duration-300">
+                    <h3 class="text-2xl font-bold mb-4 text-accent">🤖 AI Agent (Copilot) L&D Content Acceleration</h3>
+                    <p class="text-sm font-semibold text-gray-600 mb-2">Problem: Inefficient content drafting and slow response to specialized technical training requests.</p>
+                    <div class="bg-gray-50 p-4 rounded-lg my-4 border-l-4 border-accent">
+                        <p class="font-medium text-gray-700">Solution: Established an AI-powered system for rapid drafting of microlearning content outlines and utilizing AI for L&D policy inquiries.</p>
+                    </div>
+                </div>
+
+                <!-- Project 2: SharePoint/Power Automate -->
+                <div class="project-card p-8 border border-gray-200 rounded-lg shadow-md hover:shadow-xl transition duration-300">
+                    <h3 class="text-2xl font-bold mb-4 text-accent">🔗 SharePoint/Power Automate E2E Learning Workflow</h3>
+                    <p class="text-sm font-semibold text-gray-600 mb-2">Problem: Dispersed learning information, manual tracking of education enrollment, and compliance certification status.</p>
+                    <div class="bg-gray-50 p-4 rounded-lg my-4 border-l-4 border-accent">
+                        <p class="font-medium text-gray-700">Solution: Built a SharePoint L&D Hub and automated individual training enrollment, approval, and compliance tracking via Power Automate.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. 🎓 L&D and Compliance -->
+        <section id="lnd" class="py-16">
+            <h2 class="text-4xl font-extrabold text-center mb-12 text-gray-900">
+                🎓 L&D and Compliance: Future Talent Development and Regulatory Strategy
+            </h2>
+            
+            <div class="grid md:grid-cols-2 gap-10 bg-borg-light p-8 rounded-xl shadow-inner">
+                <!-- L&D Vision -->
+                <div>
+                    <h3 class="text-2xl font-bold mb-4 text-borg-blue">💡 Vision: Proposal for AI-Driven Personalized Learning Roadmap</h3>
+                    <ul class="list-none space-y-4 text-gray-700">
+                        <li class="flex items-start">
+                            <span class="text-accent text-xl mr-3 mt-1">✓</span>
+                            <div>
+                                <strong class="text-gray-900">AI-Powered Recommendation:</strong> Automated personalized roadmaps via Power Automate and AI Agent linked to IDPs.
+                            </div>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-accent text-xl mr-3 mt-1">✓</span>
+                            <div>
+                                <strong class="text-gray-900">Tech-Centric Content:</strong> Redefining training courses specialized in 'Material Technology' and 'e-Propulsion Technology'.
+                            </div>
+                        </li>
+                    </ul>
+                    <h4 class="text-xl font-bold mt-6 mb-3 text-borg-blue">On-site Content Customization & Cost Efficiency</h4>
+                    <p class="text-gray-700">Maximizing on-site applicability and engagement with self-produced 'Microlearning' videos specialized for the Changnyeong Site, contributing to cost savings by reducing reliance on external instructors.</p>
+                </div>
+
+                <!-- Compliance -->
+                <div class="bg-white p-6 rounded-lg shadow-lg border-l-4 border-yellow-500">
+                    <h3 class="text-2xl font-bold mb-4 text-yellow-700">🛡️ Compliance-Based L&D Expert Competency Proof</h3>
+                    <p class="text-gray-700">
+                        🏆 Demonstrated Compliance expertise by obtaining instructor certifications in 2 areas of mandatory education.
+                    </p>
+                    <p class="mt-3 text-sm text-gray-600">
+                        Value Contribution: Proving HR capability to improve training quality based on internalized expertise and lead global/local regulatory compliance.
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Placeholder Image for Compliance/Shield -->
+            <img src="https://placehold.co/1000x200/f59e0b/ffffff?text=Compliance+and+Certification+Focus" alt="Compliance and Certification Focus" class="mx-auto rounded-lg shadow-lg mt-10" />
+
+            <!-- ✨ GEMINI API INTEGRATION: AI Microlearning Content Generator -->
+            <div class="mt-16 p-8 bg-indigo-50 rounded-xl shadow-inner border-2 border-indigo-200">
+                <h3 class="text-3xl font-extrabold text-indigo-800 mb-6 flex items-center">
+                    ✨ AI Microlearning Content Generator (Live Demo)
+                </h3>
+                <p class="text-gray-700 mb-6">
+                    Demonstrate the capacity to quickly generate structured L&D content drafts for specialized e-mobility topics using an AI Agent.
+                </p>
+                <div class="flex flex-col md:flex-row gap-4 mb-6">
+                    <input type="text" id="microlearning-topic" value="High-Voltage Battery Safety Protocols" placeholder="Enter e-Mobility Skill/Topic (e.g., 'Thermal Management')" 
+                           class="flex-grow p-3 border border-indigo-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-gray-700" />
+                    <button id="generate-content-btn" 
+                            class="px-6 py-3 bg-gemini-yellow text-indigo-900 font-bold rounded-lg shadow-md hover:bg-yellow-400 transition duration-300 flex-shrink-0">
+                        Generate Module Outline
+                    </button>
+                </div>
+
+                <div id="loading-indicator" class="hidden text-center text-indigo-600 font-semibold">
+                    Generating... Please wait a few seconds.
+                </div>
+
+                <div id="module-output" class="mt-6 bg-white p-6 rounded-lg shadow-lg border-t-4 border-gemini-yellow hidden">
+                    <!-- Output will be injected here -->
+                </div>
+            </div>
+
+            <script>
+                document.getElementById('generate-content-btn').addEventListener('click', async () => {
+                    const topicInput = document.getElementById('microlearning-topic');
+                    const outputDiv = document.getElementById('module-output');
+                    const loadingIndicator = document.getElementById('loading-indicator');
+                    const topic = topicInput.value.trim();
+
+                    if (!topic) {
+                        outputDiv.innerHTML = '<p class="text-red-500 font-semibold">Please enter a skill or topic.</p>';
+                        outputDiv.classList.remove('hidden');
+                        return;
+                    }
+
+                    loadingIndicator.classList.remove('hidden');
+                    outputDiv.classList.add('hidden');
+                    outputDiv.innerHTML = '';
+
+                    const systemPrompt = "You are an expert L&D content developer specializing in e-mobility technology. Generate a detailed, structured microlearning module outline for the given skill topic. The output must be in JSON format.";
+                    
+                    const schema = {
+                        type: "OBJECT",
+                        properties: {
+                            "moduleTitle": { "type": "STRING", "description": "The full title of the microlearning module." },
+                            "duration": { "type": "STRING", "description": "The estimated duration of the module (e.g., '15 minutes')." },
+                            "topics": {
+                                "type": "ARRAY",
+                                "items": {
+                                    "type": "OBJECT",
+                                    "properties": {
+                                        "title": { "type": "STRING", "description": "Title of the lesson/topic." },
+                                        "keyTakeaways": {
+                                            "type": "ARRAY",
+                                            "items": { "type": "STRING" },
+                                            "description": "3-4 concise key takeaways or learning points."
+                                        }
+                                    },
+                                    "propertyOrdering": ["title", "keyTakeaways"]
+                                }
+                            }
+                        },
+                        propertyOrdering: ["moduleTitle", "duration", "topics"]
+                    };
+
+                    try {
+                        const result = await fetchGeminiContent(`Generate a microlearning outline for the topic: ${topic}`, systemPrompt, schema);
+
+                        if (typeof result === 'object' && result.moduleTitle) {
+                            let html = `<h4 class="text-xl font-bold text-borg-blue mb-4">${result.moduleTitle}</h4>`;
+                            html += `<p class="text-sm text-gray-600 mb-4">Estimated Duration: ${result.duration}</p>`;
+                            
+                            result.topics.forEach((t, index) => {
+                                html += `<div class="mt-4 border-l-4 border-accent pl-4">`;
+                                html += `<h5 class="font-semibold text-lg text-gray-800">Part ${index + 1}: ${t.title}</h5>`;
+                                html += `<ul class="list-disc list-inside text-gray-600 ml-4 mt-1 space-y-1">`;
+                                t.keyTakeaways.forEach(kt => {
+                                    html += `<li>${kt}</li>`;
+                                });
+                                html += `</ul></div>`;
+                            });
+
+                            outputDiv.innerHTML = html;
+                        } else {
+                            outputDiv.innerHTML = `<p class="text-red-500 font-semibold">Error: Could not generate structured content. (Raw output received: ${result})</p>`;
+                        }
+                    } catch (e) {
+                        outputDiv.innerHTML = `<p class="text-red-500 font-semibold">An error occurred during API call. Please try again.</p>`;
+                        console.error("Content generation failed:", e);
+                    } finally {
+                        loadingIndicator.classList.add('hidden');
+                        outputDiv.classList.remove('hidden');
+                    }
+                });
+            </script>
+        </section>
+        
+        <!-- 4. 🚀 BorgWarner Vision & Data-Driven HR -->
+        <section id="vision-map" class="py-16 bg-gray-100 rounded-xl shadow-inner">
+            <h2 class="text-4xl font-extrabold text-center mb-12 text-gray-900">
+                🚀 BorgWarner Vision & Data-Driven HR Roadmap
+            </h2>
+            
+            <!-- Data-Driven HR -->
+            <div class="max-w-4xl mx-auto p-6 bg-white rounded-xl shadow-xl mb-12">
+                <h3 class="text-2xl font-bold mb-4 text-borg-blue">📊 Proactive Response: Data-Driven L&D using Workday & AI</h3>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-semibold text-lg text-gray-800">Future Workforce Forecasting</h4>
+                        <p class="text-gray-600">Proactively identifying Skill Gaps and turnover risks by integrating Workday data with AI Agent analysis.</p>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-lg text-gray-800">Strategic L&D Decision Support</h4>
+                        <p class="text-gray-600">Providing management with key L&D Metrics (e.g., L&D ROI, program effectiveness) through dashboards.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Execution Roadmap -->
+            <div class="max-w-4xl mx-auto">
+                <h3 class="text-2xl font-bold mb-6 text-center text-gray-800">🗺️ L&D Digital Transformation Execution Roadmap (3 Phase)</h3>
+                <ol class="space-y-6">
+                    <li class="bg-white p-6 rounded-xl shadow-md border-l-4 border-borg-blue">
+                        <div class="font-extrabold text-xl mb-1 text-borg-blue">Phase 1 (0–6 Months): Foundation</div>
+                        <p class="text-gray-700">Establishing SharePoint L&D Hub and automating basic workflows (training request/compliance tracking).</p>
+                    </li>
+                    <li class="bg-white p-6 rounded-xl shadow-md border-l-4 border-borg-blue">
+                        <div class="font-extrabold text-xl mb-1 text-borg-blue">Phase 2 (7–18 Months): Deep Automation</div>
+                        <p class="text-gray-700">Deploying AI Agent (Copilot) L&D content acceleration and initiating the customized video production system for Changnyeong Site.</p>
+                    </li>
+                    <li class="bg-white p-6 rounded-xl shadow-md border-l-4 border-borg-blue">
+                        <div class="font-extrabold text-xl mb-1 text-borg-blue">Phase 3 (19+ Months): Strategic Impact</div>
+                        <p class="text-gray-700">Finalizing the Data-Driven L&D Dashboard and implementing AI-based learning roadmap recommendation for all employees.</p>
+                    </li>
+                </ol>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white text-center py-8 mt-12">
+        <p class="text-lg font-semibold mb-2">The core of future mobility is 'people,' and the engine for that growth is 'L&D Innovation.'</p>
+        <p>&copy; Selin Ryu L&D Specialist Portfolio</p>
+    </footer>
+
+</body>
+</html>
